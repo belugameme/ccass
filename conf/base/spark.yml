@@ -1,0 +1,5 @@
+spark.driver.maxResultSize: 3g
+spark.scheduler.mode: FAIR
+spark.sql.sources.partitionOverwriteMode: dynamic
+spark.network.timeout: 120000000
+spark.hadoop.fs.s3a.aws.credentials.provider: org.apache.hadoop.fs.s3a.SimpleAWSCredentialsProvider

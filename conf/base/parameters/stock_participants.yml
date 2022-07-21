@@ -1,0 +1,51 @@
+stock_participants:
+  request:
+    url: https://www3.hkexnews.hk/sdw/search/searchsdw.aspx
+    headers:
+      Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8
+      Content-Type: application/x-www-form-urlencoded
+      Origin: https://www3.hkexnews.hk
+      Cookie: WT_FPC=id=104.115.38.236-4187519488.30971897:lv=1657857198886:ss=1657855289856; sclang=en
+      Content-Length: '356'
+      Accept-Language: en-GB,en;q=0.9
+      Host: www3.hkexnews.hk
+      User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/15.5 Safari/605.1.15
+      Referer: https://www3.hkexnews.hk/sdw/search/searchsdw.aspx
+      Accept-Encoding: gzip, deflate, br
+      Connection: keep-alive
+    data:
+      __EVENTTARGET: btnSearch
+      __EVENTARGUMENT: ''
+      __VIEWSTATE: '/wEPDwUKMTY0ODYwNTA0OWRkVb0Z6/twMzkjq6As1zABy65ev+E='
+      __VIEWSTATEGENERATOR: 'A7B2BBE2'
+      today: '20220715'
+      sortBy: shareholding
+      sortDirection: desc
+      txtShareholdingDate: 2022/07/14
+      txtStockCode: '00001'
+  response:
+    column_search:
+      participant_id:
+        tag: td
+        attr_type: class
+        atrr_value: col-participant-id
+        value_class: mobile-list-body
+        value_type: string
+      participant_name:
+        tag: td
+        attr_type: class
+        atrr_value: col-participant-name
+        value_class: mobile-list-body
+        value_type: string
+      sharenumber:
+        tag: td
+        attr_type: class
+        atrr_value: col-shareholding
+        value_class: mobile-list-body
+        value_type: numeric
+      sharepercent:
+        tag: td
+        attr_type: class
+        atrr_value: col-shareholding-percent
+        value_class: mobile-list-body
+        value_type: percentage

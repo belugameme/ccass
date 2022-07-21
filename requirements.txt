@@ -1,0 +1,9 @@
+dash
+dash-extensions
+jupyter-dash
+dash_bootstrap_components
+tenacity
+sqlalchemy
+pandas
+gunicorn
+psycopg2

@@ -1,0 +1,34 @@
+{
+    "type" : "struct",
+    "fields" : [ {
+      "name" : "participant_id",
+      "type" : "string",
+      "nullable" : true,
+      "metadata" : { }
+    }, {
+      "name" : "participant_name",
+      "type" : "string",
+      "nullable" : true,
+      "metadata" : { }
+    }, {
+      "name" : "sharenumber",
+      "type" : "long",
+      "nullable" : true,
+      "metadata" : { }
+    }, {
+        "name" : "sharepercent",
+        "type" : "double",
+        "nullable" : true,
+        "metadata" : { }
+    }, {
+        "name" : "business_date",
+        "type" : "string",
+        "nullable" : true,
+        "metadata" : { }
+    }, {
+        "name" : "stock_code",
+        "type" : "string",
+        "nullable" : true,
+        "metadata" : { }
+    } ]
+}  

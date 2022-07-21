@@ -1,0 +1,11 @@
+scheduler:
+  current_date: '20220718'
+  min_date: '2022-06-01'
+  max_date: '2022-07-18'
+modular_pipeline:
+  start: 0
+  end: 5365
+  step: 40
+#5365
+system:
+  bucket_name: ccass-data-store
