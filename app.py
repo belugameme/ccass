@@ -1,4 +1,5 @@
-from dash import Dash, html, Input, Output, callback, dash_table, dcc
+from tracemalloc import start
+from dash import Dash, html, Input, Output, callback, dash_table, dcc, ctx
 import pandas as pd
 import dash_bootstrap_components as dbc
 from sqlalchemy.pool import NullPool
@@ -22,7 +23,24 @@ engine = create_engine(cred_dict['db_credentials']['con'])
 
 stock_list_query = """select * from stock_list where stock_code in (select distinct stock_code from stock_participants)"""
 stock_top10_participants_query = """select * from stock_top10_participants"""
-stock_participants_hist_query = """select * from stock_participants"""
+stock_participants_hist_query = """select * from stock_participants where stock_code='{0}'""".format("00001")
+#stock_participants_hist_query = """select * from stock_participants"""
+
+def get_participants_hist_by_stock(stock_code: str):
+    stock_participants_hist_query = """select * from stock_participants where stock_code='{0}'""".format(stock_code)
+    @retry(wait=wait_exponential(multiplier=2, min=1, max=10), stop=stop_after_attempt(5))
+    def try_connection(stock_participants_hist_query):
+        try:
+            with engine.connect() as connection:
+                stmt = text("SELECT 1")
+                connection.execute(stmt)
+                df_stock_participants_hist = pd.read_sql(stock_participants_hist_query, connection)
+            print("Connection to database successful.")
+            return df_stock_participants_hist
+        except Exception as e:
+            print("Connection to database failed, retrying.")
+        raise Exception
+    return try_connection(stock_participants_hist_query)
 
 stock_participant_diff_query = """select * from stock_participants where stock_code in (select stock_code from stock_list where stock_code = '{0}')""".format("00001")
 
@@ -34,28 +52,26 @@ def try_connection():
             connection.execute(stmt)
             df_stock_list = pd.read_sql(stock_list_query, connection)
             df_stock_top10_participants = pd.read_sql(stock_top10_participants_query, connection)
-            df_stock_participants_hist = pd.read_sql(stock_participants_hist_query, connection)
         print("Connection to database successful.")
-        return df_stock_list, df_stock_top10_participants, df_stock_participants_hist
+        return df_stock_list, df_stock_top10_participants
     except Exception as e:
         print("Connection to database failed, retrying.")
         raise Exception
 
-df_stock_list, df_stock_top10_participants, df_stock_participants_hist = try_connection()
+df_stock_list, df_stock_top10_participants = try_connection()
+df_stock_participants_hist_sample = get_participants_hist_by_stock('00001')
+#df_stock_participants_hist
 stock_list = df_stock_list['stock_code']
 
-min_date, max_date = app_config['config']['min_date'], app_config['config']['max_date']
+global_min_date, global_max_date = app_config['config']['min_date'], app_config['config']['max_date']
 
-def 
-
-
-df = df_stock_participants[(df_stock_participants['business_date'] >= min_date) & (df_stock_participants['business_date'] <= max_date)]
-a = list(df.columns)
-b= a.pop()
-df = df[[b] + a]
+# df = df_stock_participants[(df_stock_participants['business_date'] >= min_date) & (df_stock_participants['business_date'] <= max_date)]
+# a = list(df.columns)
+# b= a.pop()
+# df = df[[b] + a]
 
 percentage = FormatTemplate.percentage(2)
-table_columns = [{"name": i, "id": i} for i in df.columns]
+table_columns = [{"name": i, "id": i} for i in df_stock_participants_hist_sample.columns]
 for col in table_columns:
     if col['id'] == 'sharepercent':
         col['type'] = 'numeric'
@@ -94,7 +110,10 @@ app.layout = html.Div(children=[
             html.Div(id='output-container-date-picker-range')
         ], style={'padding': 10, 'flex': 1, 'width': '50vh'}),
         html.Div([
-            html.Label('set the min share% threshold'),
+            html.Button(id="search-button", children="search"),
+        ], style={'padding': 5, 'flex': 1}),
+        html.Div([
+            html.Label('search button'),
             dcc.Input(
                 id='min-share-threshold', 
                 type="number", placeholder="input %",
@@ -124,7 +143,7 @@ app.layout = html.Div(children=[
                             dbc.Container([
                                 dbc.Label('Click a cell in the table:'),
                                 dash_table.DataTable(
-                                    df.to_dict('records'),
+                                    df_stock_participants_hist_sample.to_dict('records'),
                                     table_columns, 
                                     id='tbl',
                                     filter_action="native",
@@ -169,43 +188,59 @@ def update_output(value):
     Output('stock-date-picker-range', 'end_date'), 
     Output('stock-date-picker-range', 'min_date_allowed'), 
     Output('stock-date-picker-range', 'max_date_allowed'), 
-    Input('tbl', 'data'),
     Input('stock_code-dropdown', 'value'),
     prevent_initial_call=True
 )
-def update_calendar(df_dict, dropdown_value):
-    if dropdown_value:
-        date_list = [i['business_date'] for i in df_dict]
-        min_date, max_date = min(date_list), max(date_list)
-        min_date = datetime.strptime(min_date, "%Y-%m-%d").date()
-        min_date_allowed = min_date
-        max_date = datetime.strptime(max_date, "%Y-%m-%d").date()
-        max_date_allowed = max_date
-        return min_date, max_date, min_date_allowed, max_date_allowed
+def update_calendar(value):
+    if value:
+        df = get_participants_hist_by_stock(value)
+        #df = df_stock_participants_hist[df_stock_participants_hist.stock_code == value]
+        min_date, max_date = min(df['business_date']), max(df['business_date'])
+        return min_date, max_date, min_date, max_date
     else:
-        return date(2021, 7, 1), date(2022, 7, 15), date(2021, 7, 1), date(2022, 7, 15)
+        return app_config['config']['min_date'], app_config['config']['max_date'], app_config['config']['min_date'], app_config['config']['max_date']
 
-@app.callback(
+@app.long_callback(
     Output('tbl', 'data'),
-    Input('stock_code-dropdown', 'value')
+    Input('stock_code-dropdown', 'value'),
+    Input('stock-date-picker-range', 'start_date'), 
+    Input('stock-date-picker-range', 'end_date'), 
+    Input('search-button', 'n_clicks'),
+    running=[
+        (Output("search-button", "disabled"), True, False),
+    ],
 )
-def update_table(value):
-    print(f'You have selected {value}')
-    filtered_df = df[df.stock_code == value]
-    print(filtered_df)
-    #fig = dash_table.DataTable(filtered_df.to_dict('records'),[{"name": i, "id": i} for i in filtered_df.columns], id='tbl')
-    #fig.update_layout(transition_duration=500)
-    return filtered_df.to_dict('records')
+def click_search(value, start_date, end_date, button_clicks):
+    button_id = ctx.triggered_id if not None else 'No clicks yet'
+    if button_id == 'search-button':
+        print(f'You have selected {value}')
+        df = df_stock_top10_participants[df_stock_top10_participants.stock_code == value]
+        top10_lst = list(df[df.business_date == end_date]['participant_id'])
+        print('top10_lst')
+        print(top10_lst)
+        df_stock_participants_hist = get_participants_hist_by_stock(value)
+        df_sub = df_stock_participants_hist[(df_stock_participants_hist.business_date >= start_date) & (df_stock_participants_hist.business_date <= end_date) & (df_stock_participants_hist.participant_id.isin(top10_lst))]
+        return df_sub.to_dict('records')
+
+# @app.callback(
+#     Output('tbl', 'data'),
+#     Input('stock_code-dropdown', 'value'),
+#     Input('stock-date-picker-range', 'start_date'), 
+#     Input('stock-date-picker-range', 'end_date'), 
+# )
+# def update_table(value, start_date, end_date):
+#     print(f'You have selected {value}')
+#     df = df_stock_top10_participants[df_stock_top10_participants.stock_code == value]
+#     top10_lst = list(df[df.business_date == end_date]['participant_id'])
+#     print('top10_lst')
+#     print(top10_lst)
+#     df_stock_participants_hist = get_participants_hist_by_stock(value)
+#     df_sub = df_stock_participants_hist[(df_stock_participants_hist.business_date >= start_date) & (df_stock_participants_hist.business_date <= end_date) & (df_stock_participants_hist.participant_id.isin(top10_lst))]
+#     return df_sub.to_dict('records')
 
 @callback(Output('tbl_out', 'children'), Input('tbl', 'active_cell'))
 def update_graphs(active_cell):
     return str(active_cell) if active_cell else "Click the table"
-
-# @app.callback(Output("download_csv", "data"), [Input("btn_csv", "n_clicks")], prevent_initial_call=True)
-# def func(n_nlicks):
-#     return dcc.send_data_frame(df.to_csv, "mydf.csv")
-
-
 
 @callback(
     Output('asofdate-picker', 'min_date_allowed'), 
@@ -230,14 +265,6 @@ def update_shareholder_linechart(df_dict, dropdown_value, start_date, end_date):
     if dropdown_value:
         df = pd.DataFrame(df_dict)
         print('before filtering, line chart dataframe is:')
-        print(df.head(5))
-        df = df[df['stock_code'] == dropdown_value]
-        df["business_date"] = pd.to_datetime(df["business_date"])
-        df['business_date'] = df['business_date'].dt.strftime('%Y-%m-%d')
-        #start_date = datetime.strptime(start_date, '%Y-%m-%d').strftime('%Y/%m/%d')
-        #end_date = datetime.strptime(end_date, '%Y-%m-%d').strftime('%Y/%m/%d')
-        df = df[(df['business_date'] >= start_date) & (df['business_date'] <= end_date)]
-        print('line chart dataframe is:')
         print(df.head(5))
     else:
         df = pd.DataFrame({})

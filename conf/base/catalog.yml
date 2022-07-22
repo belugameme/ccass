@@ -4,13 +4,6 @@
 # Link: https://kedro.readthedocs.io/en/stable/data/data_catalog.html
 test:
   type: MemoryDataSet
-stock_list@parquet:
-  type: pandas.ParquetDataSet
-  filepath: data/01_raw/stock_list
-  load_args:
-    columns: [stock_code, stock_name]
-  save_args:
-    compression: GZIP
 
 stock_list_psqltable:
   type: pandas.SQLTableDataSet
@@ -22,18 +15,6 @@ stock_list_psqltable:
     schema: public
     if_exists: replace
 
-stock_participants@parquet:
-  type: pandas.ParquetDataSet
-  filepath: data/01_raw/stock_participants_spark_process
-
-# stock_list_s3:
-#   type: pandas.ParquetDataSet
-#   filepath: s3://$(system.bucket_name)/data/00_source/stock_list
-#   credentials: dev_s3
-#   load_args:
-#     columns: [stock_code, stock_name]
-#   save_args:
-#     compression: GZIP
 stock_list_s3:
   type: spark.SparkDataSet
   filepath: s3a://$(system.bucket_name)/data/01_raw/stock_list
@@ -44,36 +25,6 @@ stock_list_s3:
     header: True
     mode: overwrite
 
-
-stock_participants@pandas:
-  type: PartitionedDataSet
-  dataset:
-    type: pandas.ParquetDataSet
-  path: data/01_raw/stock_participants_spark
-
-stock_participants_psqltable:
-  type: pandas.SQLTableDataSet
-  credentials: db_credentials
-  table_name: stock_participants
-  load_args:
-    schema: public
-  save_args:
-    schema: public
-    if_exists: append
-
-stock_participants@spark:
-  type: spark.SparkDataSet
-  filepath: data/01_raw/stock_participants_spark
-  file_format: parquet
-  load_args:
-    header: True
-    schema:
-      filepath: conf/base/stock_participants_spark.json
-  save_args:
-    sep: '|'
-    header: True
-    mode: overwrite
-    partitionBy: stock_code
 
 stock_participants_spark:
   type: spark.SparkDataSet
@@ -90,6 +41,16 @@ stock_participants_spark:
     partitionBy: 
       - stock_code
       - business_date
+
+stock_participants_psqltable:
+  type: pandas.SQLTableDataSet
+  credentials: db_credentials
+  table_name: stock_participants
+  load_args:
+    schema: public
+  save_args:
+    schema: public
+    if_exists: append
 
 stock_participants_diff:
   type: spark.SparkDataSet

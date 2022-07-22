@@ -57,19 +57,6 @@ def get_stock_list(url: str, params: dict, headers: dict, rename_mapper: dict) -
     df_stock_list = sparkse.createDataFrame(df_stock_list)
     return df_stock_list
 
-def get_stocks_participants_spark(df_stock_list: pd.DataFrame, url: str, data_body: dict, headers: dict, columns: dict, current_date: str, min_date: str, max_date: str) \
-    -> DataFrame:
-    #df_stock_list = df_stock_list.head(100)
-    #df_stock_list = df_stock_list[(df_stock_list.stock_code >= '00600') & (df_stock_list.stock_code <= '00601')]
-    df_stock_participants_list= []
-    for stock_code in df_stock_list['stock_code']:
-        df_stock_participants =  get_stock_participants_spark(url, data_body, headers, columns, current_date, min_date, max_date, stock_code)
-        print(f'stock=={stock_code}')
-        if df_stock_participants is not None:
-            df_stock_participants_list.append(df_stock_participants)
-    df_stocks_participants = reduce(DataFrame.unionAll, df_stock_participants_list)
-    return df_stocks_participants
-
 def get_stocks_participants(df_stock_list: pd.DataFrame, url: str, data_body: dict, headers: dict, columns: dict, current_date: str, min_date: str, max_date: str) -> pd.DataFrame:
     df_stock_list = df_stock_list.head(2)
     df_stock_participants_list= []
@@ -85,9 +72,7 @@ def get_stocks_participants_spark_concurrent(df_stock_list: pd.DataFrame, \
     url: str, data_body: dict, headers: dict, columns: dict, 
     current_date: str, min_date: str, max_date: str, 
     start: int, end: int) -> DataFrame:
-    #df_stock_list = df_stock_list.head(10)
-    df_stock_list = df_stock_list[df_stock_list['stock_code'] == '00113']
-    #df_stock_list = df_stock_list.iloc[start:end]
+    df_stock_list = df_stock_list.iloc[start:end]
     df_stock_participants_list= []
     with concurrent.futures.ThreadPoolExecutor(max_workers=100) as executor:
         stock_code_list = [stock_code for stock_code in df_stock_list['stock_code']]
@@ -107,8 +92,6 @@ def get_stocks_participants_concurrent(df_stock_list: pd.DataFrame, \
     url: str, data_body: dict, headers: dict, columns: dict, 
     current_date: str, min_date: str, max_date: str, 
     start: int, end: int) -> pd.DataFrame:
-    #df_stock_list = df_stock_list.head(100)
-    #df_stock_list = df_stock_list[df_stock_list['stock_code'] == '00113']
     df_stock_list = df_stock_list.iloc[start:end]
     df_stock_participants_list= []
     with concurrent.futures.ThreadPoolExecutor(max_workers=5) as executor:
@@ -125,17 +108,6 @@ def get_stocks_participants_concurrent(df_stock_list: pd.DataFrame, \
     if len(df_stock_participants_list) >= 1:
         df = pd.concat(df_stock_participants_list)
         return df
-
-
-# def get_stocks_participants(df_stock_list: pd.DataFrame, url: str, data_body: dict, headers: dict, columns: dict, current_date: str, min_date: str, max_date: str) \
-#     -> Dict[str, pd.DataFrame]:
-#     df_stock_list = df_stock_list.head(2)
-#     df_stock_participants_parts = {}
-#     for stock_code in df_stock_list['stock_code']:
-#         df_stock_participants =  get_stock_participants(url, data_body, headers, columns, current_date, min_date, max_date, stock_code)
-#         print(f'stock=={stock_code}')
-#         df_stock_participants_parts[f'stock=={stock_code}'] = df_stock_participants
-#     return df_stock_participants_parts
 
 def get_stock_participants(url: str, data_body: dict, headers: dict, \
     columns: dict, current_date: str, min_date: str, 
