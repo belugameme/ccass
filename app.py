@@ -15,7 +15,7 @@ from plotly.subplots import make_subplots
 import plotly.graph_objects as go
 import logging
 
-cred_stream = open("conf/local/credentials.yml", "r")
+cred_stream = open("conf/base/credentials.yml", "r")
 app_stream = open("conf/base/parameters/app.yml", "r")
 cred_dict = yaml.safe_load(cred_stream)
 app_config = yaml.safe_load(app_stream)
@@ -80,7 +80,7 @@ app.layout = html.Div(children=[
         style={'textAlign': 'center'}
     ),
     html.Div(children='''
-        Dash: A web application framework for your data.
+        Dash: CCASS Visualization.
     ''', style={'textAlign': 'center'}),
     html.Div([
         html.Div([
