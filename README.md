@@ -4,6 +4,8 @@
 
 This project has 2 parts. 
 
+### Back end
+
 The data scrapping pipeline uses Kedro framework, export the data tables to hosted DB via ODBC / Spark. For Kedro, refer to the [Kedro documentation](https://kedro.readthedocs.io).
 
 Below datasets / tables are produced:
@@ -16,4 +18,8 @@ The init / incremental load params can be configured at: hkex-ccass-scraper/conf
 
 The node logics and pipeline instances at: hkex-ccass-scraper/src/hkex_ccass_scraper/pipelines/data_engineering/
 
+### Front end
+
 The visualization uses plotly, hosted at: https://ccass-plotter.herokuapp.com 
+
+The visualization code at app.py
