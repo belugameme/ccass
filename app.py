@@ -21,7 +21,7 @@ cred_dict = yaml.safe_load(cred_stream)
 app_config = yaml.safe_load(app_stream)
 engine = create_engine(cred_dict['db_credentials']['con'])
 
-stock_list_query = """select * from stock_list where stock_code in (select distinct stock_code from stock_participants)"""
+stock_list_query = """select * from stock_list_no_missing"""
 stock_top10_participants_query = """select * from stock_top10_participants"""
 def get_table(table: str, stock_code: str):
     query = """select * from {0} where stock_code='{1}'""".format(table, stock_code)
@@ -45,14 +45,14 @@ def try_connection():
             stmt = text("SELECT 1")
             connection.execute(stmt)
             df_stock_list = pd.read_sql(stock_list_query, connection)
-            df_stock_top10_participants = pd.read_sql(stock_top10_participants_query, connection)
-        print("Connection to database successful.")
-        return df_stock_list, df_stock_top10_participants
+            #df_stock_top10_participants = pd.read_sql(stock_top10_participants_query, connection)
+        logging.info(f"Connection to database successful.")
+        return df_stock_list#, df_stock_top10_participants
     except Exception as e:
-        print("Connection to database failed, retrying.")
+        logging.warning(f"Connection to database failed, retrying.")
         raise Exception
 
-df_stock_list, df_stock_top10_participants = try_connection()
+df_stock_list = try_connection()
 df_stock_participants_hist_sample = get_table('stock_participants', '00001')
 df_stock_participants_diff_sample = get_table('stock_participants_diff', '00001')
 stock_list = df_stock_list['stock_code']
@@ -228,7 +228,8 @@ def update_calendar(value):
 )
 def update_table(value, start_date, end_date):
     print(f'You have selected {value}')
-    df = df_stock_top10_participants[df_stock_top10_participants.stock_code == value]
+    df = get_table('stock_top10_participants', value)
+    #df = df_stock_top10_participants[df_stock_top10_participants.stock_code == value]
     top10_lst = list(df[df.business_date == end_date]['participant_id'])
     print('top10_lst')
     print(top10_lst)
