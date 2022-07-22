@@ -8,3 +8,5 @@ sqlalchemy
 pandas
 gunicorn
 psycopg2
+yaml
+plotly
